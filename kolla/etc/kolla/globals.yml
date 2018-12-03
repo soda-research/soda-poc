@@ -27,7 +27,7 @@ vitrage_dev_mode: "yes"
 mistral_dev_mode: "yes"
 
 # Location of configuration overrides
-#node_custom_config: "/etc/kolla/config"
+node_custom_config: "/etc/kolla/config"
 
 # This should be a VIP, an unused IP on your network that will float between
 # the hosts running keepalived for high-availability. If you want to run an

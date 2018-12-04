@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+mkdir -p /home/trove/.ssh/
+cat <<EOT >> /home/trove/.ssh/authorized_keys
+<SSH_PUBLIC_KEY>
+EOT
+
+mkdir -p /root/.ssh/
+cat <<EOT >> /root/.ssh/id_rsa
+<SSH_PRIVATE_KEY>
+EOT
+chmod 600 /root/.ssh/id_rsa
+
+ln -s /etc/trove/conf.d/trove-guestagent.conf /etc/trove/trove-guestagent.conf
+
+rsync \
+  -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" -a \
+  --exclude .git \
+  --exclude-from /opt/trove/.gitignore \
+  root@<OSC_INTERNAL_IP>:/opt/stack/trove/ /opt/trove-rsync
+
+chown -R trove /opt/trove-rsync
+
+systemctl stop trove-guest
+
+if [[ -d /opt/trove-rsync ]]; then
+    mv /opt/trove /opt/trove-orig
+    mv /opt/trove-rsync /opt/trove
+fi
+
+systemctl start trove-guest
+
+guest_id=$(awk -F "=" '/guest_id/ {print $2}' /etc/trove/conf.d/guest_info.conf)
+
+monasca-setup \
+  --username monitoring \
+  --password monitoring \
+  --project_name monasca_control_plane \
+  --project_domain_name default \
+  --user_domain_name default \
+  --keystone_url http://<OSC_INTERNAL_VIP>:5000/v3 \
+  --monasca_url http://<OSC_INTERNAL_VIP>:8070/v2.0 \
+  --system_only \
+  --service trove \
+  --dimensions resource_id:${guest_id},resource_type:trove.instance \
+  --verbose

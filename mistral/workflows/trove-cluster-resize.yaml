@@ -1,0 +1,26 @@
+---
+version: 2
+trove_resize_cluster_volume:
+  description: Resize Trove Cluster Volume
+  type: direct
+  input:
+    - cluster_id
+  output:
+    new_volume_size: <% $.new_volume_size %>
+  tasks:
+    calculate_new_volume_size:
+      action: trove.clusters_find id=<% $.cluster_id %> %>
+      publish:
+        new_volume_size: <% task(calculate_new_volume_size).result.instances.first().volume.size * 2 %>
+      on-success:
+        - resize_cluster_volume
+    resize_cluster_volume:
+      action: trove.clusters_resize_volume cluster=<% $.cluster_id %> volume_size=<% $.new_volume_size %> %>
+      on-success:
+        - wait_for_cluster_resize
+    wait_for_cluster_resize:
+      action: trove.clusters_get cluster=<% $.cluster_id %>
+      retry:
+        delay: 10
+        count: 30
+        continue-on: <% task(wait_for_cluster_resize).result.task.name != 'NONE' %>

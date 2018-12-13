@@ -20,12 +20,6 @@ kolla_install_type: "source"
 # Valid option is Docker repository tag
 openstack_release: "master"
 
-# Development options
-kolla_source_version: "master"
-trove_dev_mode: "yes"
-vitrage_dev_mode: "yes"
-mistral_dev_mode: "yes"
-
 # Location of configuration overrides
 node_custom_config: "/etc/kolla/config"
 
@@ -541,3 +535,18 @@ tempest_floating_network_name:
 #enable_prometheus_memcached: "{{ enable_prometheus | bool }}"
 #enable_prometheus_alertmanager: "{{ enable_prometheus | bool }}"
 #enable_prometheus_ceph_mgr_exporter: "{{ enable_prometheus | bool and enable_ceph | bool }}"
+
+# Development options
+kolla_source_version: "master"
+
+trove_dev_mode: "yes"
+trove_git_repository: "https://github.com/soda-research/trove.git"
+trove_source_version: "soda-poc"
+
+vitrage_dev_mode: "yes"
+vitrage_git_repository: "https://github.com/soda-research/vitrage.git"
+vitrage_source_version: "soda-poc"
+
+mistral_dev_mode: "yes"
+mistral_git_repository: "https://github.com/soda-research/mistral.git"
+mistral_source_version: "soda-poc"

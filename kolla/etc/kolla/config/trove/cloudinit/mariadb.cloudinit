@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 
+# add osc public key
 mkdir -p /home/trove/.ssh/
 cat <<EOT >> /home/trove/.ssh/authorized_keys
 <SSH_PUBLIC_KEY>
 EOT
 
+# add osc private key
 mkdir -p /root/.ssh/
 cat <<EOT >> /root/.ssh/id_rsa
 <SSH_PRIVATE_KEY>
 EOT
 chmod 600 /root/.ssh/id_rsa
 
+# link guestagent config
 ln -s /etc/trove/conf.d/trove-guestagent.conf /etc/trove/trove-guestagent.conf
 
+# synchronize trove code from osc
 rsync \
   -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" -a \
   --exclude .git \
@@ -30,8 +34,19 @@ fi
 
 systemctl start trove-guest
 
+# wait until guestagent completes preparing database service
+while [ ! -f /home/trove/.guestagent.prepare.end ]; do sleep 2; done
+
+# create user for monitoring agent
+# mysql -e "CREATE USER 'monitoring'@'localhost' IDENTIFIED BY 'monitoring';"
+
+# grant access for monitoring agent
+# mysql -e "GRANT SELECT, REPLICATION CLIENT, SHOW DATABASES, SUPER, PROCESS ON *.* TO 'monitoring'@'localhost';"
+
+# fetch trove instance id
 guest_id=$(awk -F "=" '/guest_id/ {print $2}' /etc/trove/conf.d/guest_info.conf)
 
+# init monasca agent
 monasca-setup \
   --username monitoring \
   --password monitoring \
@@ -43,4 +58,9 @@ monasca-setup \
   --system_only \
   --service trove \
   --dimensions resource_id:${guest_id},resource_type:trove.instance \
+  --verbose
+
+# setup mysql monitoring plugin
+monasca-setup \
+  --detection_plugins mysql \
   --verbose

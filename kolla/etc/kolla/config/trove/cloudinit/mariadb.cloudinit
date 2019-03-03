@@ -38,10 +38,10 @@ systemctl start trove-guest
 while [ ! -f /home/trove/.guestagent.prepare.end ]; do sleep 2; done
 
 # create user for monitoring agent
-# mysql -e "CREATE USER 'monitoring'@'localhost' IDENTIFIED BY 'monitoring';"
+mysql -e "CREATE USER 'monitoring'@'localhost' IDENTIFIED BY 'monitoring';"
 
 # grant access for monitoring agent
-# mysql -e "GRANT SELECT, REPLICATION CLIENT, SHOW DATABASES, SUPER, PROCESS ON *.* TO 'monitoring'@'localhost';"
+mysql -e "GRANT SELECT, REPLICATION CLIENT, SHOW DATABASES, SUPER, PROCESS ON *.* TO 'monitoring'@'localhost';"
 
 # fetch trove instance id
 guest_id=$(awk -F "=" '/guest_id/ {print $2}' /etc/trove/conf.d/guest_info.conf)
@@ -63,4 +63,5 @@ monasca-setup \
 # setup mysql monitoring plugin
 monasca-setup \
   --detection_plugins mysql \
+  --detection_args 'host=127.0.0.1 user=monitoring password=monitoring'
   --verbose
